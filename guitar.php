@@ -125,7 +125,6 @@ $scales = json_decode('[
     { "name": "Flamenco"             ,  "intervals": [ 0, 1, 3, 4, 5, 7, 8, 10]}
 ]');
 
-
 $tunings = json_decode('[
 	{ "val": ["E",  "B",  "G",  "D",  "A",  "E"  ], "name": "EADGBE (standard)" },
 	{ "val": ["F",  "C",  "G",  "D",  "A",  "E"  ], "name": "EADGCF (4th)" },
@@ -377,3 +376,123 @@ console.log("chord = " + chord);
 rel_show();
 </script>
 
+<h2>Chord composer</h2>
+<?php
+						#		C         C#/Db      D           D#Eb      E         F          F#/Gb     G         G#/Ab          A          A#/Bb        B        
+#                               R          b9       sus2/9 	    m	      M       Sus4/11        b5		 5			b6/b9		   6/9        7           M7
+						#       I		  ii          II        iii       III        IV          v         V         vi            VI         vii         VII        ii        II         
+#$composer = json_decode('[ {"Root": 1}, {"b3": 2}, {"2": 3}, {"b3": 4}, {"3": 5}, {"4": 6}, {"b5": 7}, {"5": 8}, {"#5/b6": 9}, {"6": 10}, {"7m": 11}, {"7": 12},  {"b9": 2}, {"9": 3}, {"11": 6}, {"b13": 9}, {"13": 10} ]');
+$composer = [ 
+	"Root" 	=> 1, 
+	"b2" 	=> 2, 
+	"2" 	=> 3, 
+	"b3" 	=> 4, 
+	"3" 	=> 5, 
+	"4" 	=> 6, 
+	"b5" 	=> 7, 
+	"5" 	=> 8, 
+	"#5/b6" => 9, 
+	"6" 	=> 10, 
+	"7m" 	=> 11, 
+	"7" 	=> 12,  
+	"b9" 	=> 2, 
+	"9" 	=> 3, 
+	"11" 	=> 6, 
+	"b13" 	=> 9, 
+	"13" 	=> 10 
+];
+$jscomposer = json_encode($composer);
+
+?>
+<?php
+$div ="fboard3";
+print("<br>\n");
+print("<div id='$div'>\n");
+print("</div>\n");
+?>
+<table><tr><th>Visualisation</th><th>Tuning</th></tr><tr>
+<td>
+<select id="composeviz" onchange="compose_show()">
+	<option value="show" selected>Afficher</option>
+	<option value="mask" >Masquer</option>
+</select>
+</td>
+<td>
+<select id="composetune" onchange="compose_tune_set(); compose_show();">
+<?php
+	foreach ($tunings as $t) {
+		print("\t<option value='" .json_encode($t->val) ."'>$t->name</options>\n");
+	}
+?>
+</select>
+</td>
+<td>
+<?php 
+foreach ($composer as $k => $v) {
+	print("<input type='checkbox' id='id_$k' name='$k' onchange='compose_show()'/><label for='$k'>$k</label>");
+}
+?>
+</td>
+</tr></table>
+<script>
+var compose = JSON.parse('<?php echo $jscomposer; ?>');
+console.log("compose = " + compose);
+var div2  = "<?php echo $div;?>";
+var fb3   = new fretboard(div2, {nfrets: 11, relative: true, numbers: false, marks: false, onclick: 'compose_root_set(this.id)'});
+var idx   = false;
+var chord = null;
+
+fb3.draw();
+function compose_root_set(id) {
+	idx = id;
+	compose_show();
+}
+function compose_tune_set() {
+	t     = document.getElementById("composetune");
+	fb3.tune(t.options[t.selectedIndex].value);
+}
+function compose_viz_set() {
+	var e = document.getElementById("composeviz");
+	var viz = e.options[e.selectedIndex].value;
+	fb3.viz_mode(viz);
+}
+function compose_chord_show() {
+	compose_scale_reset()
+	chord = fetch_chord();
+	if (chord == "none") chord = null;
+	else chord = JSON.parse(chord);
+}
+function compose_scale_show() {
+	s     = document.getElementById("composescale");
+	compose_chord_reset()
+	chord = s.options[s.selectedIndex].value;
+	if (chord == "none") chord = null;
+	else chord = JSON.parse(chord);
+}
+function compose_chord_reset() {
+	c = document.getElementById("composechord");
+	c.selectedIndex = 0;
+}
+function compose_scale_reset() {
+	s = document.getElementById("composescale");
+	s.selectedIndex = 0;
+}
+function compose_show() {
+	compose_viz_set();
+	compose_tune_set();
+	chord  = fetch_chord();
+	console.log("chord = " + chord);
+	fb3.relative_show(idx, chord);	
+}
+compose_show();
+
+function fetch_chord() {
+	vals = [];
+	for (const k in compose) {
+		console.log("k = " + k + ", id = id_" + k);
+		if (document.getElementById("id_"+ k).checked) vals.push(compose[k] - 1);
+	}
+	console.log("chord = " + vals);
+	return vals;
+}
+</script>
