@@ -23,7 +23,7 @@ var fretboard = class {
 
 		this.conf      	 = c.parse(params);
 		console.log(this.conf);
-
+		this.sel       = [ false, false, false, false, false, false ];
 
 				  	  //    0    1        2    3    4       5    6        7    8     9        10    11
 		this.nrefb     = [ "A", "Bb",    "B", "C", "Db",    "D", "Eb",    "E", "F",  "Gb",    "G",  "Ab"    ];
@@ -36,7 +36,7 @@ var fretboard = class {
 
 		this.fretnum   = "<td colspan='3' class='fretnum'>\$frtn</td>";
 		this.fretmks   = "<td colspan='3' class='fretmarks'>\$mark</td>";
-		this.frettop   = "<td class='fb l msk' id='\$id_tl'></td><td class='fb msk' rowspan='2' id='\$id' \$func></td><td class='fb r msk' id='\$id_tr'></td>";
+		this.frettop   = "<td class='fb l msk' id='\$id_tl'></td><td class='fb msk' rowspan='2' id='\$id' \$func>\$note</td><td class='fb r msk' id='\$id_tr'></td>";
 		this.fretbot   = "<td class='fb l b msk' id='\$id_bl'></td><td class='fb r b msk' id='\$id_br'></td>";
 		this.frethdr   = "<th rowspan='2' class='fb msk' id='\$id'>\$note</th>";
 		this.style     = "\
@@ -47,6 +47,11 @@ th.fb  { \
 	border-right: 2px double black;\
 	width: 20px;\
 }\
+td.fb.msk {\
+	color: white;\
+	background-color: white;\
+}\
+td.fb.sel { color: white; background-color: red; }\
 td.fretnum, td.fretmarks {\
 	text-align: center;\
 	border: 0px solid black; \
@@ -97,7 +102,7 @@ td.b{\
 			if (i < 0) i = this.nrefb.indexOf(sn);
 			if (i < 0) i = this.nrefd.indexOf(sn);
 
-			//console.log("note: " + sn + " index = " + i);
+//			console.log("note: " + sn + " index = " + i);
 
 			if (i < 0) { 
 				console.log("ERROR: Unknown note " + sn + ", reset to standard tuning");
@@ -121,7 +126,7 @@ td.b{\
 		} else {
 			this.conf.mask = false;
 		}
-		console.log("viz mode: " + mask);
+		//console.log("viz mode: " + mask);
 	}
 
 	draw() {
@@ -142,17 +147,27 @@ td.b{\
 		// fretborad:
 		for (let s in this.strings) {
 			str += "<tr class='b'>";
+			var b = this.notes.indexOf(this.conf.strnames[s]);
+			if (b < 0) b = this.nrefb.indexOf(this.conf.strnames[s]);
+			if (b < 0) b = this.nrefd.indexOf(this.conf.strnames[s]);
+
+
+			//var b = this.notes.indexOf(this.conf.strnames[s]);
 
 			// Header (string names):
 			if (this.conf.header) {
+				var t = "";
+				if (this.conf.selectable != false) t = "onclick='" + this.div + ".select(" + s + ", " + fret +")'";
 				str += this.frethdr.replace(/\$id/g,  this.div + "_" + s + "_0").replace(/\$note/g, this.conf.strnames[s]);
 			}
-			
 			// strings (top part):
 			for (var fret = 1; fret < this.conf.nfrets; fret++) {
 				var t = "";
 				if (this.conf.onclick != null) t = "onclick='" + this.conf.onclick + "'"; 
-				str += this.frettop.replace(/\$id/g, this.div + "_" + s + "_" + fret).replace(/\$func/g, t);
+				else if (this.conf.selectable != false) t = "onclick='" + this.div + ".select(" + s + ", " + fret +")'"; 
+				var fbn = (b + fret) % 12;
+				//console.log("open: " + b + ", fret: " + fret + ", fbn = "+ fbn + ", note = " + this.notes[fbn]);
+				str += this.frettop.replace(/\$id/g, this.div + "_" + s + "_" + fret).replace(/\$note/g, this.notes[fbn]).replace(/\$func/g, t);
 			}
 
 			// strings (bottom part):
@@ -246,6 +261,24 @@ td.b{\
 		}	
 	}
 
+	select(string, fret) {
+		if (this.sel[string] !== false) {
+			e = document.getElementById(this.div + "_" + string + "_" + this.sel[string]);
+			e.classList.remove("root");
+			e.classList.remove("sel");
+			e.classList.add("msk");
+			if (fret == this.sel[string]) {
+				this.sel[string] = false;
+				return;
+			}
+		}
+		e = document.getElementById(this.div + "_" + string + "_" + fret);
+		e.classList.add("sel");
+		e.classList.remove("msk");
+		if (fret == this.sel[string]) this.sel[string] = false;
+		this.sel[string] = fret;
+	}	
+
 	note_show(note) {
 		this.reset();
 		for (var i = 0; i < this.conf.strnames.length; i++) {
@@ -272,6 +305,7 @@ td.b{\
 		}
 	}
 	reset() {
+		//if (this.conf.selectable == true) return;
 		for (var i = 0; i < this.conf.strnames.length; i++) {
 			var b = this.strings[i];
 			for (var f = 0; f < this.conf.nfrets; f++) {

@@ -496,3 +496,20 @@ function fetch_chord() {
 	return vals;
 }
 </script>
+<br/>
+<br/>
+<h2>Chord editor (wip)</h2>
+<?php
+$div ="fboard4";
+print("<br>\n");
+print("<div id='$div'>\n");
+print("</div>\n");
+print("<br/><br/>\n");
+?>
+<script>
+var div4  = "<?php echo $div;?>";
+var fboard4  = new fretboard(div4, {nfrets: 13, relative: false, numbers: true, marks: true, selectable: true});
+
+fboard4.draw();
+
+</script>
