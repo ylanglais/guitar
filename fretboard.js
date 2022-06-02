@@ -21,9 +21,9 @@ var fretboard = class {
 							 "strnames": {"type": "object",  "val": ['E', "B", "G", "D", "A", "E" ]}
 						    });
 
-		this.conf      	 = c.parse(params);
-		console.log(this.conf);
-		this.sel       = [ false, false, false, false, false, false ];
+		this.conf      = c.parse(params);
+		//console.log(this.conf);
+		this.sel       = [ -1, -1, -1, -1, -1, -1 ];
 
 				  	  //    0    1        2    3    4       5    6        7    8     9        10    11
 		this.nrefb     = [ "A", "Bb",    "B", "C", "Db",    "D", "Eb",    "E", "F",  "Gb",    "G",  "Ab"    ];
@@ -38,7 +38,7 @@ var fretboard = class {
 		this.fretmks   = "<td colspan='3' class='fretmarks'>\$mark</td>";
 		this.frettop   = "<td class='fb l msk' id='\$id_tl'></td><td class='fb msk' rowspan='2' id='\$id' \$func>\$note</td><td class='fb r msk' id='\$id_tr'></td>";
 		this.fretbot   = "<td class='fb l b msk' id='\$id_bl'></td><td class='fb r b msk' id='\$id_br'></td>";
-		this.frethdr   = "<th rowspan='2' class='fb msk' id='\$id'>\$note</th>";
+		this.frethdr   = "<th rowspan='2' class='fb msk' id='\$id' \$func>\$note</th>";
 		this.style     = "\
 table.fb { border: 0px solid black; border-spacing: 0px; padding: 0px}\
 tr.fb    { border: 0px solid black }\
@@ -51,7 +51,7 @@ td.fb.msk {\
 	color: white;\
 	background-color: white;\
 }\
-td.fb.sel { color: white; background-color: red; }\
+th.fb.sel, td.fb.sel { color: white; background-color: red; }\
 td.fretnum, td.fretmarks {\
 	text-align: center;\
 	border: 0px solid black; \
@@ -157,8 +157,10 @@ td.b{\
 			// Header (string names):
 			if (this.conf.header) {
 				var t = "";
+				fret = 0;
 				if (this.conf.selectable != false) t = "onclick='" + this.div + ".select(" + s + ", " + fret +")'";
-				str += this.frethdr.replace(/\$id/g,  this.div + "_" + s + "_0").replace(/\$note/g, this.conf.strnames[s]);
+				else if (this.conf.selectable != false) t = "onclick='" + this.div + ".select(" + s + ", " + fret +")'"; 
+				str += this.frethdr.replace(/\$id/g,  this.div + "_" + s + "_0").replace(/\$note/g, this.conf.strnames[s]).replace(/\$func/g, t);
 			}
 			// strings (top part):
 			for (var fret = 1; fret < this.conf.nfrets; fret++) {
@@ -261,22 +263,52 @@ td.b{\
 		}	
 	}
 
+	sf2note(string, fret) {
+		var b = this.strings[string];
+		var fbn = (b + fret) % 12;
+		return this.notes[fbn];
+	} 
+
+	selcount() {
+		var n = 0;
+		for (var f of this.sel) { if (f != -1) n++; }
+		return n;
+	}
+
+	selname() {
+		var r = [];
+		var strs = "";
+		for (var i = 5; i >= 0; i--) {
+			if (this.sel[i] != -1) {
+				var n = this.sf2note(i, this.sel[i]);
+				r.push(n); 
+				strs += n + "  ";
+			}
+		}
+		return strs;
+	}
+
 	select(string, fret) {
-		if (this.sel[string] !== false) {
+		if (this.sel[string] > -1) {
 			e = document.getElementById(this.div + "_" + string + "_" + this.sel[string]);
 			e.classList.remove("root");
 			e.classList.remove("sel");
 			e.classList.add("msk");
-			if (fret == this.sel[string]) {
-				this.sel[string] = false;
-				return;
-			}
+		} 
+		if (fret == this.sel[string]) { 
+			this.sel[string] = -1;
+		} else {
+			e = document.getElementById(this.div + "_" + string + "_" + fret);
+			e.classList.add("sel");
+			e.classList.remove("msk");
+			this.sel[string] = fret;
 		}
-		e = document.getElementById(this.div + "_" + string + "_" + fret);
-		e.classList.add("sel");
-		e.classList.remove("msk");
-		if (fret == this.sel[string]) this.sel[string] = false;
-		this.sel[string] = fret;
+
+		var cna = document.getElementById(this.div + "_cnames");
+		if (cna != null) {
+			cna.innerHTML = this.selname();
+		}
+			
 	}	
 
 	note_show(note) {

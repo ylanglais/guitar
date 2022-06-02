@@ -504,11 +504,13 @@ $div ="fboard4";
 print("<br>\n");
 print("<div id='$div'>\n");
 print("</div>\n");
+print("<br/>\n");
+print("<div id='".$div."_cnames'></div>\n");
 print("<br/><br/>\n");
 ?>
 <script>
 var div4  = "<?php echo $div;?>";
-var fboard4  = new fretboard(div4, {nfrets: 13, relative: false, numbers: true, marks: true, selectable: true});
+var fboard4  = new fretboard(div4, {nfrets: 13, relative: false, numbers: true, marks: true, selectable: true });
 
 fboard4.draw();
 
